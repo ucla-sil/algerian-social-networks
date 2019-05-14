@@ -3,6 +3,7 @@ import codecs
 import spacy.matcher
 import spacy.tokenizer
 
+import quotemerger
 
 KEYWORDS = set([
     'mère', 'père', 'fils', 'fille', 'épous',
@@ -173,6 +174,7 @@ match_merger = spacy.matcher.Matcher(nlp.vocab)
 
 print('Matchers initialized')
 
+
 def quote_merger(doc):
     matched_spans = []
     matches = match_merger(doc)
@@ -218,7 +220,8 @@ def main():
 
     matcher.add('GENDRE_1', relationship_set.handle_gendre_1, MATCHERS['GENDRE_1'])
     # matcher.add('GENDRE_2', relationship_set.handle_gendre_2, MATCHERS['GENDRE_2'])
-    # nlp.add_pipe(quote_merger, first=True)
+    merger = quotemerger.HyphenatedNameMerger(nlp.vocab)
+    nlp.add_pipe(merger.merger, first=True)
     parsed_doc = nlp(in_file)
     # result = match_merger(parsed_doc)
     # print('Exiting')
