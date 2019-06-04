@@ -133,14 +133,24 @@ class RelationshipHandler:
             father=inner_doc.ents[0]
         ))
 
+    def handle_fd_1(self, matcher, doc, i, matches):
+        pass
+
     def handle_fd_2(self, matcher, doc, i, matches):
         _, start, end = matches[i]
         inner_doc = doc[start:end]
         print(inner_doc)
+        if len(inner_doc.ents) < 2:
+            for word in inner_doc:
+                print(word, word.pos_, word.tag_)
+            print('Found mismatch')
         self.relationships.append(FatherDaughterRelationship(
             daughter=inner_doc.ents[0],
             father=inner_doc.ents[1]
         ))
+
+    def handle_fd_3(self, matcher, doc, i, matches):
+        pass
 
     def handle_fd_4(self, matcher, doc, i, matches):
         _, start, end = matches[i]
@@ -163,6 +173,9 @@ class RelationshipHandler:
             father=inner_doc.ents[0],
             husband=inner_doc.ents[1],
         ))
+
+    def handle_gendre_2(self, matcher, doc, i, matches):
+        pass
 
 
 print('Loading model ...')
@@ -187,35 +200,15 @@ def quote_merger(doc):
     return doc
 
 
-def matcher_for_vocab(vocab):
-    match_merger = spacy.matcher.Matcher(nlp.vocab)
-
-    match_merger.add('HYPHENATED_NAMES', None, [
-        # {'TEXT': {'REGEX': r'[A-Z]\w+-[\w-]+'}}
-        # {'TEXT': {'REGEX': r'\w+-\w+'}}
-        {'TEXT': {'REGEX': r"[A-Z][\w'’]+"}},
-        {'TEXT': {'REGEX': r'-'}},
-        {'TEXT': {'REGEX': r"[A-Z][\w'’]+"}},
-        {'TEXT': {'REGEX': r"^([A-Z])|([A-Z][\w’'-]+)|(-)|(’)$"}, 'OP': '*'},
-        # {'TEXT': {'REGEX': r'\w+'}},
-    ])
 
 def main():
     in_file = codecs.open('Mercier_1600-1837.txt').read()
     relationship_set = RelationshipHandler()
-    match_merger.add('HYPHENATED_NAMES', None, [
-        # {'TEXT': {'REGEX': r'[A-Z]\w+-[\w-]+'}}
-        # {'TEXT': {'REGEX': r'\w+-\w+'}}
-        {'TEXT': {'REGEX': r"[A-Z][\w'’]+"}},
-        {'TEXT': {'REGEX': r'-'}},
-        {'TEXT': {'REGEX': r"[A-Z][\w'’]+"}},
-        {'TEXT': {'REGEX': r"^([A-Z])|([A-Z][\w’'-]+)|(-)|(’)$"}, 'OP': '*'},
-        # {'TEXT': {'REGEX': r'\w+'}},
-    ])
     matcher.add('FATHER_SON_1', relationship_set.handle_fs_1, MATCHERS['FATHER_SON_1'])
     matcher.add('FATHER_SON_2', relationship_set.handle_fs_2, MATCHERS['FATHER_SON_2'])
     matcher.add('FATHER_SON_3', relationship_set.handle_fs_3, MATCHERS['FATHER_SON_3'])
 
+    matcher.add('FATHER_DAUGHTER_2', relationship_set.handle_fd_2, MATCHERS['FATHER_DAUGHTER_2'])
     matcher.add('FATHER_DAUGHTER_4', relationship_set.handle_fd_4, MATCHERS['FATHER_DAUGHTER_4'])
 
     matcher.add('GENDRE_1', relationship_set.handle_gendre_1, MATCHERS['GENDRE_1'])
@@ -223,9 +216,6 @@ def main():
     merger = quotemerger.HyphenatedNameMerger(nlp.vocab)
     nlp.add_pipe(merger.merger, first=True)
     parsed_doc = nlp(in_file)
-    # result = match_merger(parsed_doc)
-    # print('Exiting')
-    # return
     matches = matcher(parsed_doc)
 
     for rel in relationship_set.relationships:
