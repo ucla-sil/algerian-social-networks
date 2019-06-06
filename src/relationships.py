@@ -1,6 +1,3 @@
-import spacy
-
-
 class FatherSonRelationship:
 
     def __init__(self, father='unnamed father', son='unnamed son'):
@@ -10,9 +7,10 @@ class FatherSonRelationship:
 
 class FatherDaughterRelationship:
 
-    def __init__(self, father, daughter):
+    def __init__(self, father, daughter, matched_rule):
         self.father = father
         self.daughter = daughter
+        self.matched_rule = matched_rule
 
 
 class GendreRelationship:
@@ -66,7 +64,7 @@ class RelationshipHandler:
                 father = doc[start - pos].text
                 break
         if father and daughter:
-            self.relationships.append(FatherDaughterRelationship(father=father, daughter=daughter))
+            self.relationships.append(FatherDaughterRelationship(father=father, daughter=daughter, matched_rule='fd1'))
 
     def handle_fd_2(self, matcher, doc, i, matches):
         _, start, end = matches[i]
@@ -77,7 +75,8 @@ class RelationshipHandler:
             print('Found mismatch')
         self.relationships.append(FatherDaughterRelationship(
             daughter=inner_doc.ents[0],
-            father=inner_doc.ents[1]
+            father=inner_doc.ents[1],
+            matched_rule='fd2'
         ))
 
     def handle_fd_3(self, matcher, doc, i, matches):
@@ -88,12 +87,13 @@ class RelationshipHandler:
         inner_doc = doc[start:end]
         father = None
         if inner_doc.ents:
-            father = inner_doc.ents[0]
-        else:
-            father = inner_doc.conjuncts[0]
+            father = inner_doc.ents[0].text
+        # else:
+        #     father = inner_doc.conjuncts[0]
         self.relationships.append(FatherDaughterRelationship(
             father=father,
-            daughter='unnamed daughter'
+            daughter='unnamed daughter',
+            matched_rule='fd4'
         ))
 
     def handle_gendre_1(self, matcher, doc, i, matches):

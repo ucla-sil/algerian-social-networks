@@ -1,5 +1,5 @@
-NAME = {'POS': {'IN': ['PROPN', 'NOUN',]}, 'OP': '+'}
-DE = {'REGEX': "d[eu']"}
+NAME = {'POS': {'IN': ['PROPN', 'NOUN']}, 'OP': '+'}
+DE = {'TEXT': {'REGEX': "^d[eu']$" }}
 
 
 MATCHERS = {
@@ -50,7 +50,7 @@ MATCHERS = {
         {'POS': 'PROPN', 'OP': '!',},
         {'LOWER': 'fille'},
         DE,
-        NAME,
+        {'POS': {'IN': ['PROPN',]}, 'OP': '+'}
     ],
 
     'GENDRE_1': [ NAME, {'LOWER': ','}, {'LOWER': 'gendre',}, DE, NAME, ],

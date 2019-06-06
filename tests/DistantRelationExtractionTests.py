@@ -63,50 +63,38 @@ class FatherDaughter4Tests (unittest.TestCase, TestUtilsMixin):
     merger = quotemerger.HyphenatedNameMerger(nlp.vocab)
     nlp.add_pipe(merger.merger, first=True)
 
-    def testFD4FindsFatherWhenPresent(self):
-        self.notImplemented()
+    def testFD4FindsFatherWhenPresentAndLaIsPresent(self):
+        test_case = "Comme sa femme préférée, la fille de Ben-Gana, ne lui avait pas donné d’enfants, il épousa une fille des Mokrani, seigneurs de la Medjana."
+        parsed_doc = self.nlp(test_case)
+        relationship_set = RelationshipHandler()
+        matcher = spacy.matcher.Matcher(self.nlp.vocab)
+        matcher.add('FATHER_DAUGHTER_4', relationship_set.handle_fd_4, patterns.MATCHERS['FATHER_DAUGHTER_4'])
+        matches = matcher(parsed_doc)
+        self.assertEqual(1, len(relationship_set.relationships))
+        relationship = relationship_set.relationships[0]
+        self.assertEqual(relationship.father, 'Ben-Gana')
+        self.assertEqual(relationship.daughter, 'unnamed daughter')
+
+    def testFD4FindsFatherWhenPresentAndUneIsPresent(self):
+        test_case = "Comme sa femme préférée, une fille de Ben-Gana, ne lui avait pas donné d’enfants, il épousa une fille des Mokrani, seigneurs de la Medjana."
+        parsed_doc = self.nlp(test_case)
+        relationship_set = RelationshipHandler()
+        matcher = spacy.matcher.Matcher(self.nlp.vocab)
+        matcher.add('FATHER_DAUGHTER_4', relationship_set.handle_fd_4, patterns.MATCHERS['FATHER_DAUGHTER_4'])
+        matches = matcher(parsed_doc)
+        self.assertEqual(1, len(relationship_set.relationships))
+        relationship = relationship_set.relationships[0]
+        self.assertEqual(relationship.father, 'Ben-Gana')
+        self.assertEqual(relationship.daughter, 'unnamed daughter')
 
     def testFD4DoesNotFindFatherDaughterWhenFatherNotPresentInParagraph(self):
-        self.notImplemented()
-
-    def testFD4DoesNotFindDaughterWhenCapitalizedNonNameIsPresentAfterSaFille(self):
-        self.notImplemented()
-
-
-
-class MarriageRelationships1Tests(unittest.TestCase, TestUtilsMixin):
-
-    nlp = spacy.load('fr')
-    merger = quotemerger.HyphenatedNameMerger(nlp.vocab)
-    nlp.add_pipe(merger.merger, first=True)
-
-    def testM1FindsFatherNameAndHusbandName(self):
-        self.notImplemented()
+        test_case = "Comme sa femme préférée, une fille du cheik, ne lui avait pas donné d’enfants, il épousa une fille des Mokrani, seigneurs de la Medjana."
+        parsed_doc = self.nlp(test_case)
+        relationship_set = RelationshipHandler()
+        matcher = spacy.matcher.Matcher(self.nlp.vocab)
+        matcher.add('FATHER_DAUGHTER_4', relationship_set.handle_fd_4, patterns.MATCHERS['FATHER_DAUGHTER_4'])
+        matches = matcher(parsed_doc)
+        self.assertEqual(0, len(relationship_set.relationships))
 
 
-class MarriageRelationship2Tests(unittest.TestCase, TestUtilsMixin):
 
-    nlp = spacy.load('fr')
-    merger = quotemerger.HyphenatedNameMerger(nlp.vocab)
-    nlp.add_pipe(merger.merger, first=True)
-
-    def testM2FindsFatherNameAndHusbandName(self):
-        self.notImplemented()
-
-class MarriageRelationship3Tests(unittest.TestCase, TestUtilsMixin):
-
-    nlp = spacy.load('fr')
-    merger = quotemerger.HyphenatedNameMerger(nlp.vocab)
-    nlp.add_pipe(merger.merger, first=True)
-
-    def testM3FindsFatherNameAndHusbandName(self):
-        self.notImplemented()
-
-class MarriageRelationship4Tests(unittest.TestCase, TestUtilsMixin):
-
-    nlp = spacy.load('fr')
-    merger = quotemerger.HyphenatedNameMerger(nlp.vocab)
-    nlp.add_pipe(merger.merger, first=True)
-
-    def testM4FindsFatherNameAndHusbandName(self):
-        self.notImplemented()
