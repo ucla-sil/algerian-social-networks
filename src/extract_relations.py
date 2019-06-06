@@ -4,6 +4,8 @@ import spacy.matcher
 import spacy.tokenizer
 
 import quotemerger
+from patterns import MATCHERS
+from relationships import FatherSonRelationship, FatherDaughterRelationship, GendreRelationship, RelationshipHandler
 
 KEYWORDS = set([
     'mère', 'père', 'fils', 'fille', 'épous',
@@ -23,159 +25,8 @@ Rules:
         if next word is PROPN and word after all PROPNs is comma, then 
 """
 
-NAME = {'POS': {'IN': ['PROPN',]}, 'OP': '+'}
+
 # NAME = {'POS': 'PROPN', 'OP': '+'}
-DE = {'REGEX': "d[eu']"}
-
-MATCHERS = {
-    'FATHER_SON_1': [
-        {'POS': 'PROPN', 'OP': '!',},
-        {'LOWER': ',', 'OP' : '!'},
-        {'LOWER': 'fils'},
-        {},
-        DE,
-        {'POS': 'PROPN'},
-        {'LOWER': '-', 'OP': '?'},
-        NAME,
-    ],
-    'FATHER_SON_2': [
-        NAME,
-        {'LOWER': ','},
-        {'LOWER': 'fils'},
-        DE,
-        NAME,
-    ],
-    'FATHER_SON_3': [
-        {'POS': 'PROPN', 'OP': '!',},
-        {'LOWER': ',', 'OP' : '!'},
-        {'LOWER': 'fils'},
-        DE,
-        NAME,
-        {'LOWER': ','},
-        NAME,
-    ],
-
-    'FATHER_DAUGHTER_2': [
-        NAME,
-        {'LOWER': ','},
-        {'LOWER': 'fille'},
-        DE,
-        NAME,
-    ],
-
-    'FATHER_DAUGHTER_4': [
-        {'POS': 'PROPN', 'OP': '!',},
-        {'LOWER': 'fille'},
-        DE,
-        NAME,
-    ],
-
-    'GENDRE_1': [ NAME, {'LOWER': ','}, {'LOWER': 'gendre',}, DE, NAME, ],
-    'GENDRE_2': [ NAME, {'LOWER': ','}, {'LOWER': 'gendre',}, DE, {'POS' : 'N'}, ],
-
-}
-
-class FatherSonRelationship:
-
-    def __init__(self, father='unnamed father', son='unnamed son'):
-        self.father = father
-        self.son = son
-
-
-class FatherDaughterRelationship:
-
-    def __init__(self, father, daughter):
-        self.father = father
-        self.daughter = daughter
-
-
-class GendreRelationship:
-
-    def __init__(self, father, husband):
-        self.father = father
-        self.husband = husband
-
-
-class RelationshipHandler:
-
-    def __init__(self):
-        self.relationships = []
-
-    def handle_fs_1(self, matcher, doc, i, matches):
-        match_id, start, end = matches[i]
-        inner_doc = doc[start:end]
-        print('FS 1: ')
-        print(inner_doc)
-        self.relationships.append(FatherSonRelationship(father=inner_doc.ents[0]))
-
-    def handle_fs_2(self, matcher, doc, i, matches):
-        _, start, end = matches[i]
-        inner_doc = doc[start:end]
-        print('FS 2: ')
-        print(inner_doc)
-        if len(inner_doc.ents) == 1:
-            son = inner_doc[0]
-            father = inner_doc.ents[0]
-        else:
-            son = inner_doc.ents[0]
-            father = inner_doc.ents[1]
-
-        self.relationships.append(FatherSonRelationship(
-            son=son,
-            father=father
-        ))
-
-    def handle_fs_3(self, matcher, doc, i, matches):
-        _, start, end = matches[i]
-        inner_doc = doc[start:end]
-        print(inner_doc)
-        self.relationships.append(FatherSonRelationship(
-            father=inner_doc.ents[0]
-        ))
-
-    def handle_fd_1(self, matcher, doc, i, matches):
-        pass
-
-    def handle_fd_2(self, matcher, doc, i, matches):
-        _, start, end = matches[i]
-        inner_doc = doc[start:end]
-        print(inner_doc)
-        if len(inner_doc.ents) < 2:
-            for word in inner_doc:
-                print(word, word.pos_, word.tag_)
-            print('Found mismatch')
-        self.relationships.append(FatherDaughterRelationship(
-            daughter=inner_doc.ents[0],
-            father=inner_doc.ents[1]
-        ))
-
-    def handle_fd_3(self, matcher, doc, i, matches):
-        pass
-
-    def handle_fd_4(self, matcher, doc, i, matches):
-        _, start, end = matches[i]
-        inner_doc = doc[start:end]
-        print(inner_doc)
-        father = None
-        if inner_doc.ents:
-            father = inner_doc.ents[0]
-        else:
-            father = inner_doc.conjuncts[0]
-        self.relationships.append(FatherDaughterRelationship(
-            father=father,
-            daughter='unnamed daughter'
-        ))
-
-    def handle_gendre_1(self, matcher, doc, i, matches):
-        _, start, end = matches[i]
-        inner_doc = doc[start:end]
-        self.relationships.append(GendreRelationship(
-            father=inner_doc.ents[0],
-            husband=inner_doc.ents[1],
-        ))
-
-    def handle_gendre_2(self, matcher, doc, i, matches):
-        pass
 
 
 print('Loading model ...')
@@ -204,6 +55,8 @@ def quote_merger(doc):
 def main():
     in_file = codecs.open('Mercier_1600-1837.txt').read()
     relationship_set = RelationshipHandler()
+    merger = quotemerger.HyphenatedNameMerger(nlp.vocab)
+    nlp.add_pipe(merger.merger, first=True)
     matcher.add('FATHER_SON_1', relationship_set.handle_fs_1, MATCHERS['FATHER_SON_1'])
     matcher.add('FATHER_SON_2', relationship_set.handle_fs_2, MATCHERS['FATHER_SON_2'])
     matcher.add('FATHER_SON_3', relationship_set.handle_fs_3, MATCHERS['FATHER_SON_3'])
@@ -212,9 +65,7 @@ def main():
     matcher.add('FATHER_DAUGHTER_4', relationship_set.handle_fd_4, MATCHERS['FATHER_DAUGHTER_4'])
 
     matcher.add('GENDRE_1', relationship_set.handle_gendre_1, MATCHERS['GENDRE_1'])
-    # matcher.add('GENDRE_2', relationship_set.handle_gendre_2, MATCHERS['GENDRE_2'])
-    merger = quotemerger.HyphenatedNameMerger(nlp.vocab)
-    nlp.add_pipe(merger.merger, first=True)
+    matcher.add('GENDRE_2', relationship_set.handle_gendre_2, MATCHERS['GENDRE_2'])
     parsed_doc = nlp(in_file)
     matches = matcher(parsed_doc)
 

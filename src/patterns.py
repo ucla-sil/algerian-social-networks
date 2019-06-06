@@ -1,6 +1,6 @@
-NAME = {'POS': {'IN': ['PROPN', 'PUNCT',]}, 'OP': '*'}
-# NAME = {'POS': 'PROPN', 'OP': '+'}
+NAME = {'POS': {'IN': ['PROPN', 'NOUN',]}, 'OP': '+'}
 DE = {'REGEX': "d[eu']"}
+
 
 MATCHERS = {
     'FATHER_SON_1': [
@@ -18,8 +18,6 @@ MATCHERS = {
         {'LOWER': ','},
         {'LOWER': 'fils'},
         DE,
-        {'POS': 'PROPN'},
-        {'LOWER': '-', 'OP': '?'},
         NAME,
     ],
     'FATHER_SON_3': [
@@ -27,11 +25,16 @@ MATCHERS = {
         {'LOWER': ',', 'OP' : '!'},
         {'LOWER': 'fils'},
         DE,
-        {'POS': 'PROPN'},
         NAME,
         {'LOWER': ','},
-        {'LOWER': '-', 'OP': '?'},
-        {'POS': 'PROPN'},
+        NAME,
+    ],
+
+    'FATHER_DAUGHTER_1': [
+        # NOTE: this is just the match for the daughter's name. We find the father's name in the handler.
+        {'LOWER': 'sa',},
+        {'LOWER': 'fille',},
+        {'LOWER': ',', 'OP': '?'},
         NAME,
     ],
 
@@ -40,7 +43,6 @@ MATCHERS = {
         {'LOWER': ','},
         {'LOWER': 'fille'},
         DE,
-        {'POS': 'PROPN'},
         NAME,
     ],
 
@@ -48,12 +50,10 @@ MATCHERS = {
         {'POS': 'PROPN', 'OP': '!',},
         {'LOWER': 'fille'},
         DE,
-        {'POS': 'PROPN'},
-        {'LOWER': '-', 'OP': '?'},
         NAME,
     ],
 
-    'GENDRE_1': [ NAME, {'POS': 'PROPN'}, {'LOWER': ','}, {'LOWER': 'gendre',}, DE, {'POS': 'PROPN'}, NAME, ],
-    'GENDRE_2': [ NAME, {'POS': 'PROPN'}, {'LOWER': ','}, {'LOWER': 'gendre',}, DE, {'POS' : 'N'}, ],
+    'GENDRE_1': [ NAME, {'LOWER': ','}, {'LOWER': 'gendre',}, DE, NAME, ],
+    'GENDRE_2': [ NAME, {'LOWER': ','}, {'LOWER': 'gendre',}, DE, {'POS' : 'N'}, ],
 
 }
