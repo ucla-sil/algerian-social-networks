@@ -69,15 +69,20 @@ def main():
     parsed_doc = nlp(in_file)
     matches = matcher(parsed_doc)
 
+    out_file = codecs.open('relations.csv', 'w', encoding='utf8')
+    out_file.write('parent,child,relation type\n')
     for rel in relationship_set.relationships:
         if isinstance(rel, FatherSonRelationship):
+            out_file.write('{},{},son\n'.format(rel.father, rel.son))
             print('{} is the father of {}'.format(rel.father, rel.son))
         elif isinstance(rel, FatherDaughterRelationship):
+            out_file.write('{},{},daughter\n'.format(rel.father, rel.daughter))
             print('{} is the father of {}'.format(rel.father, rel.daughter))
         elif isinstance(rel, GendreRelationship):
             print('An unnamed woman is the daughter of {} and husband of {}'.format(
                 rel.father, rel.husband
             ))
+    out_file.close()
 
     print('Matchers done')
 
