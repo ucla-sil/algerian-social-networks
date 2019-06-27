@@ -7,10 +7,6 @@ import quotemerger
 from patterns import MATCHERS
 from relationships import FatherSonRelationship, FatherDaughterRelationship, GendreRelationship, RelationshipHandler
 
-KEYWORDS = set([
-    'mère', 'père', 'fils', 'fille', 'épous',
-    'femme', 'client', 'parent', 'mari', 'veuve'
-])
 
 """
 Forms:
@@ -25,8 +21,6 @@ Rules:
         if next word is PROPN and word after all PROPNs is comma, then 
 """
 
-
-# NAME = {'POS': 'PROPN', 'OP': '+'}
 
 
 print('Loading model ...')
