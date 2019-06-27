@@ -1,5 +1,6 @@
-NAME = {'POS': {'IN': ['PROPN', 'NOUN']}, 'OP': '+'}
+NAME = {'POS': {'IN': ['PROPN',]}, 'OP': '+'}
 DE = {'TEXT': {'REGEX': "^d[eu']$" }}
+BEY = {'TEXT': {'LOWER': 'bey', }, 'OP': '?'}
 
 
 MATCHERS = {
@@ -9,6 +10,7 @@ MATCHERS = {
         {'LOWER': 'fils'},
         {},
         DE,
+        BEY,
         {'POS': 'PROPN'},
         {'LOWER': '-', 'OP': '?'},
         NAME,
@@ -18,6 +20,7 @@ MATCHERS = {
         {'LOWER': ','},
         {'LOWER': 'fils'},
         DE,
+        BEY,
         NAME,
     ],
     'FATHER_SON_3': [
@@ -25,6 +28,7 @@ MATCHERS = {
         {'LOWER': ',', 'OP' : '!'},
         {'LOWER': 'fils'},
         DE,
+        BEY,
         NAME,
         {'LOWER': ','},
         NAME,
@@ -43,6 +47,7 @@ MATCHERS = {
         {'LOWER': ','},
         {'LOWER': 'fille'},
         DE,
+        BEY,
         NAME,
     ],
 
@@ -50,6 +55,7 @@ MATCHERS = {
         {'POS': 'PROPN', 'OP': '!',},
         {'LOWER': 'fille'},
         DE,
+        BEY,
         {'POS': {'IN': ['PROPN',]}, 'OP': '+'}
     ],
 
