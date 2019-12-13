@@ -30,15 +30,17 @@ for in_dir in ['STENDHAL/articles-hermes', 'XRCE/JOC', 'XRCE/LeMonde', ]:
     for in_file_name in glob.glob('../../../W0032/{}/*.xml'.format(in_dir)):
         print(in_file_name)
         in_file = open(in_file_name)
-        parser = lxml.etree.XMLParser(encoding='ISO-8859-1')
-        # instance_file_xml = lxml.etree.parse(in_file_name, dtd_validation=True)
+        #parser = lxml.etree.XMLParser(encoding='ISO-8859-1')
+        parser = lxml.etree.XMLParser(encoding='ISO-8859-1', dtd_validation=True)
+        #instance_file_xml = lxml.etree.parse(in_file_name)
         instance_file_xml = lxml.etree.parse(in_file_name, parser)
         for paragraph in instance_file_xml.findall('.//p'):
-            text = paragraph.text
-            print(text)
+            #findall returns bytes, so we need to convert to a string for nlp(text) to work.
+            #trim the first two characters as these are always b' because each item consisted of bytes
+            text = str(lxml.etree.tostring(paragraph))[2:];
+            #print(text);
             doc = nlp(text)
             # then add in anaphoras
-            for sentence in paragraph.find_all('s'):
-                for token in sentence:
-                    print(token)
-
+            #for sentence in paragraph.findall('.//s'):
+            #    for token in sentence:
+            #        print(str(lxml.etree.tostring(token))[2:]);
