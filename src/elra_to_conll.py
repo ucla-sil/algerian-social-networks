@@ -41,6 +41,8 @@ for in_dir in ['STENDHAL/articles-hermes', 'XRCE/JOC', 'XRCE/LeMonde', ]:
             #print(text);
             doc = nlp(text)
             # then add in anaphoras
-            #for sentence in paragraph.findall('.//s'):
-            #    for token in sentence:
-            #        print(str(lxml.etree.tostring(token))[2:]);
+            for sentence in paragraph.findall('.//s'):
+                #I cannot tell if this is printing the intended text or not
+                #The results go past the end of </exp>
+                for token in sentence:
+                    print(str(lxml.etree.tostring(token))[2:]);
