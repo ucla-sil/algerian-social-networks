@@ -1,12 +1,9 @@
 import codecs
 import glob
-import sys
 
 import lxml.etree
 import xml.dom.minidom
-import spacy
 import spacy.tokens
-import spacy_conll
 
 # Sample format
 """
@@ -154,39 +151,3 @@ if __name__ == '__main__':
                                 print('{}:{} -> {}'.format(child.tagName, child.childNodes[1].data, ref))
                                 # print(child.tagName, ": ", child.childNodes[1].data, " -> ", ref)
 
-def extract_text(sentence):
-    return lxml.etree.tostring(sentence, method='text', encoding='unicode')
-
-def align_xml_to_string(sentence: xml.dom.minidom.Element) -> list:
-    elements = []
-    current_position = 0
-    for child in sentence.childNodes:
-        if isinstance(child, xml.dom.minidom.Text):
-            current_position += len(child.data)
-        else:
-            if child.tagName == 'exp':
-                if isinstance(child.childNodes[0], xml.dom.minidom.Text):
-                    text = child.childNodes[0].data
-                    elements.append({
-                        'start': current_position,
-                        'end': current_position + len(text),
-                        'type': 'src',
-                        'id': child.getAttribute('id'),
-                        'text': text,
-                    })
-                else:
-                    text = child.childNodes[1].data
-                    ref = child.childNodes[0].getAttribute('src')
-                    elements.append({
-                        'start': current_position,
-                        'end': current_position + len(text),
-                        'type': 'ref',
-                        'id': child.getAttribute('id'),
-                        'ref': ref,
-                        'text': text,
-                    })
-                current_position += len(text)
-            else:
-                print('Unknown child found: {}'.format(child.tagName))
-
-    return elements
