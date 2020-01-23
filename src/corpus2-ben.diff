@@ -1,0 +1,12 @@
+114c114
+< <!ELEMENT s (#PCDATA|exp|seg|propersuperset|epsilon|section|daggerdbl|yen|radical|florin|currency|sigma|integral|partialdiff|ydieresis|ordfeminine|ordmasculine|caron)*>
+---
+> <!ELEMENT s (#PCDATA|exp|seg|propersuperset|epsilon|section|daggerdbl|yen|radical|florin|currency|sigma|integral|partialdiff|ydieresis|ordfeminine|ordmasculine|caron)+>
+116c116
+< <!ELEMENT exp (#PCDATA|seg|exp|sigma|yen|radical|florin|section|partialdiff|ptr|ptr-i)*>
+---
+> <!ELEMENT exp (ptr*, ptr-i*, (#PCDATA|seg|exp|sigma|yen|radical|florin|section|partialdiff)+)>
+120c120
+< <!ELEMENT seg (#PCDATA|exp)*>
+---
+> <!ELEMENT seg (#PCDATA|exp)+>

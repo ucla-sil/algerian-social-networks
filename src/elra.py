@@ -36,7 +36,12 @@ def align_xml_to_string(sentence: xml.dom.minidom.Element) -> list:
                             texts.append(node.data)
                         else:
                             if len(node.childNodes) > 0:
-                                texts.append(node.childNodes[0].data)
+                                for child2 in node.childNodes:
+                                    if isinstance(child2, xml.dom.minidom.Text):
+                                        texts.append(child2.data)
+                                    #     print(child2.getAttribute('id'))
+                                    #     print(child2.tagName)
+                                # texts.append(node.childNodes[0].data)
                     text = ''.join(texts)
                     element['type'] = 'src'
                 else:
@@ -83,15 +88,22 @@ def increase_tag_positions(offset: int, elements: List[dict]) -> List[dict]:
     return to_return
 
 
-def whole_file_to_references(in_text: str) -> Tuple[str, List[dict]]:
+# def whole_file_to_references(in_text: str) -> Tuple[str, List[dict]]:
+def whole_file_to_references(for_text: lxml.etree.XMLParser, for_ref:xml.dom.minidom.Document) -> Tuple[str, List[dict]]:
     """
     Run process on entire document
 
     :param in_text: XML of document as text
     :return: whole text, plus list of references
     """
-    for_text = lxml.etree.fromstring(in_text)
-    for_ref = xml.dom.minidom.parseString(in_text)
+
+    # dtd_validation = b'.dtd' in in_text
+    # parser_for_text = lxml.etree.XMLParser(encoding='ISO-8859-1', dtd_validation=dtd_validation)
+    # parser_for_text.feed(in_text)
+    # root_elem = parser_for_text.close()
+    # for_text = lxml.etree.fromstring(in_text)
+    # for_text = root_elem
+    # for_ref = xml.dom.minidom.parseString(in_text)
     curr_offset = 0
 
     references = []
@@ -106,3 +118,27 @@ def whole_file_to_references(in_text: str) -> Tuple[str, List[dict]]:
 
     return ''.join(texts), references
 
+
+def tag_nlp_doc(doc, refs:List[dict]) -> None:
+    missed_refs = []
+    for ref in refs:
+        if ref['type'] == 'src':
+            result = doc.char_span(ref['start'], ref['end'], label='src')
+            if result is None:
+                missed_refs.append((ref['start'], ref['end'], ref['id'], ref['text']))
+                continue
+            for token in result:
+                token._.coref = ref['id']
+        else:
+            result = doc.char_span(ref['start'], ref['end'], label='coref')
+            if result is None:
+                missed_refs.append((ref['start'], ref['end'], ref['id'], ref['text']))
+                continue
+            for token in result:
+                token._.coref = ref['ref']
+
+    missed_ref_count = len(missed_refs)
+    if missed_ref_count > 0:
+        print('{}/{} missed refs'.format(missed_ref_count, len(refs)))
+        # for ref in missed_refs:
+        #     print(ref)

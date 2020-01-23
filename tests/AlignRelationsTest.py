@@ -89,7 +89,7 @@ class AlignRelationsTest(unittest.TestCase):
 
         in_text = '<p>{}</p>'.format(''.join(in_texts))
 
-        text, refs = elra.whole_file_to_references(in_text)
+        text, refs = elra.whole_file_to_references(*self._text_to_files(in_text))
 
         self.assertEqual(expected, refs)
 
@@ -119,7 +119,7 @@ class AlignRelationsTest(unittest.TestCase):
 
         in_text = '<p>{}</p>'.format(''.join(in_texts))
 
-        text, refs = elra.whole_file_to_references(in_text)
+        text, refs = elra.whole_file_to_references(*self._text_to_files(in_text))
 
         self.assertEqual(expected, refs)
 
@@ -161,9 +161,11 @@ class AlignRelationsTest(unittest.TestCase):
 
         in_text = '<p>{}</p>'.format(''.join(in_texts))
 
-        text, refs = elra.whole_file_to_references(in_text)
+        text, refs = elra.whole_file_to_references(*self._text_to_files(in_text))
 
         self.assertEqual(expected, refs)
 
 
+    def _text_to_files(self, text: str):
+        return lxml.etree.fromstring(text), xml.dom.minidom.parseString(text)
 

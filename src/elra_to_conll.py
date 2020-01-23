@@ -5,6 +5,8 @@ import lxml.etree
 import xml.dom.minidom
 import spacy.tokens
 
+import elra
+
 # Sample format
 """
 1. Filename
@@ -24,7 +26,9 @@ import spacy.tokens
 
 """
 
-# nlp = spacy.load('fr_core_news_md')
+nlp = spacy.load('fr_core_news_md')
+
+print('Spacy model loaded ...')
 
 out_file = codecs.open('./elra-w0032.conll', 'w', encoding='utf-8')
 
@@ -54,40 +58,100 @@ def _is_number(s):
         return False
 
 def get_morphology(tagmap, tag):
-    feats = [f'{prop}={val}' for prop, val in tagmap[tag].items() if not _is_number(prop)]
+    feats = [f'{prop}={val}' for prop, val in tagmap[tag].items() if not _is_number(prop)] if tag in tagmap else []
     if feats:
         return '|'.join(feats)
     else:
-        return '_'
+        return '-'
 
 def doc_to_tuples(nlp, doc, line_idx):
+    """
+
+    :param nlp:
+    :param doc:
+    :param line_idx:
+    :return: Doc in format below:
+
+    1.
+    2.
+    3.
+    4. word
+    5. POS tag
+    6. parse tree
+    7. verb lemma
+    8.
+    9.
+    10. speaker
+    11.
+    12.
+    13.
+    14. coref
+    """
     for sent in doc.sents:
         line_idx += 1
         parsed_sent = ''
+        lines = []
 
         for idx, word in enumerate(sent, 1):
+            if not word.text.strip():
+                continue
             if word.dep_.lower().strip() == 'root':
                 head_idx = 0
             else:
                 head_idx = word.head.i + 1 - sent[0].i
 
             line_tuple = (
-                idx,
-                '_',
-                '_',
+                idx, # 2
+                '-', # 3
                 word.text,
-                word.lemma_,
                 word.pos_,
-                word.tag_,
                 get_morphology(nlp.Defaults.tag_map, word.tag_),
+                # word.tag_,
+                word.lemma_,
                 head_idx,
+                '-',
+                '-',
                 word.dep_,
-                '_',
-                '_',
+                '-',
+                '-',
+                word._.coref,
             )
             parsed_sent += '\t'.join(map(lambda x: str(x), line_tuple)) + '\n'
+            lines.append(line_tuple)
 
-        yield line_idx, parsed_sent
+        yield line_idx, lines, parsed_sent
+
+
+def doc_to_tuples_generator(nlp, doc, line_idx):
+    for sent in doc.sents:
+        line_idx += 1
+
+        for idx, word in enumerate(sent, 1):
+            if not word.text.strip():
+                continue
+            if word.dep_.lower().strip() == 'root':
+                head_idx = 0
+            else:
+                head_idx = word.head.i + 1 - sent[0].i
+
+            line_tuple = (
+                idx, # 2
+                '-', # 3
+                word.text,
+                word.pos_,
+                get_morphology(nlp.Defaults.tag_map, word.tag_),
+                # word.tag_,
+                word.lemma_,
+                head_idx,
+                '-',
+                '-',
+                word.dep_,
+                '-',
+                '-',
+                word._.coref,
+            )
+            yield line_idx, line_tuple, None
+
 
 
 def test():
@@ -101,12 +165,36 @@ def test():
 
 
 if __name__ == '__main__':
-    spacy.tokens.Token.set_extension('coreferent_id', default='-')
+    spacy.tokens.Token.set_extension('coref', default='-')
     for in_dir in ['STENDHAL/articles-hermes', 'XRCE/JOC', 'XRCE/LeMonde', ]:
         for in_file_name in glob.glob('../../../W0032_2/{}/*.xml'.format(in_dir)):
-            print(in_file_name)
-            in_file = open(in_file_name)
+            print('Tagging {}'.format(in_file_name))
             #parser = lxml.etree.XMLParser(encoding='ISO-8859-1')
+            with open(in_file_name, 'rb') as in_file:
+                all_xml = in_file.read()
+
+                parser = lxml.etree.XMLParser(encoding='ISO-8859-1', dtd_validation=True)
+                for_text = lxml.etree.parse(in_file_name, parser=parser)
+                for_dom = xml.dom.minidom.parse(in_file_name)
+
+                # all_text, references = elra.whole_file_to_references(all_xml)
+
+                all_text, references = elra.whole_file_to_references(for_text, for_dom)
+                all_text_doc = nlp(all_text)
+
+                elra.tag_nlp_doc(all_text_doc, references)
+
+                # for token in all_text_doc:
+                #     print(token, token._.coref)
+
+                for idx, lines, _ in doc_to_tuples_generator(nlp, all_text_doc, 0):
+                    # print(in_file_name, line[1])
+                    print(in_file_name, '\t'.join([str(line) for line in lines]))
+
+            break
+        break
+
+        if 0:
             parser = lxml.etree.XMLParser(encoding='ISO-8859-1', dtd_validation=True)
             #instance_file_xml = lxml.etree.parse(in_file_name)
             instance_file_xml = lxml.etree.parse(in_file_name, parser)

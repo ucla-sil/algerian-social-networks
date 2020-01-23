@@ -1,0 +1,10 @@
+101,102c101,102
+< <!ELEMENT s (#PCDATA|exp|seg)*>
+< <!ELEMENT exp (#PCDATA|seg|exp|ptr|ptr-i)*>
+---
+> <!ELEMENT s (#PCDATA|exp|seg)+>
+> <!ELEMENT exp (ptr*, ptr-i*, (#PCDATA|seg|exp)+)>
+105c105
+< <!ELEMENT seg (#PCDATA|exp)*>
+---
+> <!ELEMENT seg (#PCDATA|exp)+>
