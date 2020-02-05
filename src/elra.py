@@ -29,6 +29,8 @@ def align_xml_to_string(sentence: xml.dom.minidom.Element) -> list:
         else:
             if child.tagName == 'exp':
                 element = {}
+                if not child.childNodes:
+                    continue
                 if isinstance(child.childNodes[0], xml.dom.minidom.Text):
                     texts = []
                     for node in child.childNodes:
@@ -45,10 +47,19 @@ def align_xml_to_string(sentence: xml.dom.minidom.Element) -> list:
                     text = ''.join(texts)
                     element['type'] = 'src'
                 else:
-                    text = child.childNodes[1].data
-                    ref = child.childNodes[0].getAttribute('src')
-                    element['type'] = 'ref'
-                    element['ref'] = ref
+                    try:
+                        text = child.childNodes[1].data
+                        ref = child.childNodes[0].getAttribute('src')
+                        element['type'] = 'ref'
+                        element['ref'] = ref
+                    except IndexError:
+                        print(child.tagName, [child.getAttribute('id') for child in child.childNodes if child.hasAttribute('id')])
+                        continue
+                    except AttributeError:
+                        print([
+                            (c, c.getAttribute('id') if hasattr(c, 'getAttribute') else c.data,) for c in child.childNodes
+                        ])
+                        continue
 
                 element['start'] = current_position
                 element['end'] = current_position + len(text)
@@ -88,7 +99,6 @@ def increase_tag_positions(offset: int, elements: List[dict]) -> List[dict]:
     return to_return
 
 
-# def whole_file_to_references(in_text: str) -> Tuple[str, List[dict]]:
 def whole_file_to_references(for_text: lxml.etree.XMLParser, for_ref:xml.dom.minidom.Document) -> Tuple[str, List[dict]]:
     """
     Run process on entire document
@@ -97,15 +107,7 @@ def whole_file_to_references(for_text: lxml.etree.XMLParser, for_ref:xml.dom.min
     :return: whole text, plus list of references
     """
 
-    # dtd_validation = b'.dtd' in in_text
-    # parser_for_text = lxml.etree.XMLParser(encoding='ISO-8859-1', dtd_validation=dtd_validation)
-    # parser_for_text.feed(in_text)
-    # root_elem = parser_for_text.close()
-    # for_text = lxml.etree.fromstring(in_text)
-    # for_text = root_elem
-    # for_ref = xml.dom.minidom.parseString(in_text)
     curr_offset = 0
-
     references = []
     texts = []
 
@@ -129,6 +131,7 @@ def tag_nlp_doc(doc, refs:List[dict]) -> None:
                 continue
             for token in result:
                 token._.coref = ref['id']
+                token._.coref_type = ref['type']
         else:
             result = doc.char_span(ref['start'], ref['end'], label='coref')
             if result is None:
@@ -136,6 +139,7 @@ def tag_nlp_doc(doc, refs:List[dict]) -> None:
                 continue
             for token in result:
                 token._.coref = ref['ref']
+                token._.coref_type = ref['type']
 
     missed_ref_count = len(missed_refs)
     if missed_ref_count > 0:

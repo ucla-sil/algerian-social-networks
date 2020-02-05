@@ -188,3 +188,9 @@ tags
 # Persistent undo
 [._]*.un~
 
+*_conll
+data/
+runs/
+
+/neuralcoref/
+

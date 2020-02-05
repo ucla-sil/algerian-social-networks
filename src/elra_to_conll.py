@@ -1,5 +1,9 @@
+import os
+import random
 import codecs
 import glob
+import re
+import shutil
 
 import lxml.etree
 import xml.dom.minidom
@@ -30,7 +34,13 @@ nlp = spacy.load('fr_core_news_md')
 
 print('Spacy model loaded ...')
 
-out_file = codecs.open('./elra-w0032.conll', 'w', encoding='utf-8')
+# out_file = codecs.open('./elra-w0032.conll', 'w', encoding='utf-8')
+out_files = [
+    # codecs.open('./elra-w0032-training.conll', 'w', encoding='utf-8'),
+    # codecs.open('./elra-w0032-testing.conll', 'w', encoding='utf-8'),
+]
+
+out_dirs = [ 'data/train', 'data/test', ]
 
 # Format, from http://conll.cemantix.org/2012/data.html:
 #  1. Document ID
@@ -112,7 +122,7 @@ def doc_to_tuples(nlp, doc, line_idx):
                 '-',
                 '-',
                 word.dep_,
-                '-',
+                '0',
                 '-',
                 word._.coref,
             )
@@ -123,10 +133,14 @@ def doc_to_tuples(nlp, doc, line_idx):
 
 
 def doc_to_tuples_generator(nlp, doc, line_idx):
+    matcher = re.compile(r'(\d+)')
+    idx = 0
+    last_coref = None
+    last_coref_type = None
     for sent in doc.sents:
-        line_idx += 1
+        # line_idx += 1
 
-        for idx, word in enumerate(sent, 1):
+        for word, next_word in zip(sent, sent[1:]):
             if not word.text.strip():
                 continue
             if word.dep_.lower().strip() == 'root':
@@ -134,39 +148,62 @@ def doc_to_tuples_generator(nlp, doc, line_idx):
             else:
                 head_idx = word.head.i + 1 - sent[0].i
 
+            matches = matcher.search(word._.coref)
+            coref = '-'
+            coref_type = word._.coref_type
+            if matches:
+                coref = ''
+                if coref_type != last_coref_type or matches[0] != last_coref:
+                    coref = '('
+                coref += matches[0]
+                next_match = matcher.search(next_word._.coref)
+                if next_word._.coref_type != coref_type or not next_match or (
+                        next_match and matches[0] != next_match[0]
+                    ):
+                    coref += ')'
+
             line_tuple = (
-                idx, # 2
-                '-', # 3
-                word.text,
-                word.pos_,
+                # idx, # 2
+                idx, # 3
+                word.text.strip(),
+                word.pos_ or word.tag_,
                 get_morphology(nlp.Defaults.tag_map, word.tag_),
                 # word.tag_,
-                word.lemma_,
+                word.lemma_.replace(' ', '-'),
                 head_idx,
                 '-',
                 '-',
                 word.dep_,
+                '0',
                 '-',
-                '-',
-                word._.coref,
+                coref,
+                # '({})'.format(matches[0]) if matches else '-',
             )
+            last_coref = matches[0] if matches and coref[-1] != ')' else '-'
+            last_coref_type = word._.coref_type
+
+            idx += 1
             yield line_idx, line_tuple, None
 
-
-
-def test():
-    doc = nlp("Antoine voudrait aller à Paris.")
-
-
-    for item in doc_to_tuples(nlp, doc, 0):
-        print(item[1])
 
 
 
 
 if __name__ == '__main__':
+    for out_dir in out_dirs:
+        out_dir_path = os.path.join('..', out_dir)
+        if os.path.exists(out_dir_path):
+            print('Wiping out {}'.format(out_dir))
+            print('Found {}'.format(out_dir_path))
+            shutil.rmtree(out_dir_path)
+        try:
+            os.mkdir(out_dir_path)
+        except FileExistsError as ex:
+            pass
+
     spacy.tokens.Token.set_extension('coref', default='-')
-    for in_dir in ['STENDHAL/articles-hermes', 'XRCE/JOC', 'XRCE/LeMonde', ]:
+    spacy.tokens.Token.set_extension('coref_type', default='-')
+    for in_dir in ['STENDHAL/articles-hermes', 'XRCE/JOC', 'XRCE_LeMonde', ]:
         for in_file_name in glob.glob('../../../W0032_2/{}/*.xml'.format(in_dir)):
             print('Tagging {}'.format(in_file_name))
             #parser = lxml.etree.XMLParser(encoding='ISO-8859-1')
@@ -184,58 +221,21 @@ if __name__ == '__main__':
 
                 elra.tag_nlp_doc(all_text_doc, references)
 
-                # for token in all_text_doc:
-                #     print(token, token._.coref)
-
-                for idx, lines, _ in doc_to_tuples_generator(nlp, all_text_doc, 0):
+                simpler_file_name = in_file_name.split('/')[-1].split('.')[0] + '.v4_gold_conll'
+                out_file = codecs.open(os.path.join('..', random.choice(out_dirs), simpler_file_name), 'w',
+                                       encoding='utf-8')
+                part_no = 1
+                out_file.write("#begin document (nw/{}); part {}\n\n".format(simpler_file_name.split('.')[0], part_no))
+                for idx, lines, _ in doc_to_tuples_generator(nlp, all_text_doc, part_no):
                     # print(in_file_name, line[1])
-                    print(in_file_name, '\t'.join([str(line) for line in lines]))
+                    # print(in_file_name, '\t'.join([str(line) for line in lines]))
+                    # simpler_file_name = '-'.join(in_file_name.split('/')[-2:])
+                    out_file.write('nw/{}\t{}\t{}\n'.format(simpler_file_name.split('.')[0], idx, '\t'.join([str(line) for line in lines])))
+                    # out_file.write('{}\t{}\n'.format(simpler_file_name, '\t'.join([str(line) for line in lines])))
 
-            break
-        break
+                out_file.write('\n')
+                out_file.write('#end document')
+                out_file.close()
 
-        if 0:
-            parser = lxml.etree.XMLParser(encoding='ISO-8859-1', dtd_validation=True)
-            #instance_file_xml = lxml.etree.parse(in_file_name)
-            instance_file_xml = lxml.etree.parse(in_file_name, parser)
-            for paragraph in instance_file_xml.findall('.//p'):
-                text = paragraph.text
-                if not text:
-                    break
-                # doc = nlp(text)
-
-                # then add in anaphoras
-                # print(lxml.etree.tostring(paragraph))
-                for sentence in paragraph.findall('.//s'):
-                    continue
-                    print(lxml.etree.tostring(sentence, encoding='unicode'))
-                    for child in sentence.getchildren():
-                        print(lxml.etree.tostring(child, method='text', encoding='unicode'))
-                    # print(lxml.etree.tostring(sentence, method='text', encoding='unicode'))
-                    # goal: count through the strings. Catch every time an anaphora reference happens.
-                    # Mark the beginning and ending character of every span of text that is inside an <exp /> element
-                    # Then go back and, using Doc.char_span, mark those as references or anaphoras
-                    for child in sentence:
-                        pass
-                        # print(child.tag, child.text)
-                        # print(str(lxml.etree.tostring(token))[2:]);
-                # make map of phrases that are sources (<exp> elements)
-                # make map of sections that co-ref something (exp > ptr["coref"] elements)
-
-
-            dom_doc = xml.dom.minidom.parse(in_file_name)
-            for para in dom_doc.getElementsByTagName('p'):
-                for sentence in para.getElementsByTagName('s'):
-                    for child in sentence.childNodes:
-                        if isinstance(child, xml.dom.minidom.Text):
-                            print('{}:{}'.format(len(child.data), child.data))
-                            # print(len(child.data), ":", child.data)
-                        else:
-                            if isinstance(child.childNodes[0], xml.dom.minidom.Text):
-                                print('{}:{}'.format(child.tagName, child.childNodes[0].data))
-                                # print(child.tagName, ": ", child.childNodes[0].data)
-                            else:
-                                ref = child.childNodes[0].getAttribute('src')
-                                print('{}:{} -> {}'.format(child.tagName, child.childNodes[1].data, ref))
-                                # print(child.tagName, ": ", child.childNodes[1].data, " -> ", ref)
-
+for out_file in out_files:
+    out_file.close()
